@@ -20,8 +20,9 @@ class Boat {
   constructor() {
     loader.load("textures/ship.glb", (gltf) => {
       scene.add(gltf.scene);
-      gltf.scene.scale.set(10, 20, 30);
-      gltf.scene.position.set(0, 4, 40);
+      gltf.scene.scale.set(15, 20, 15);
+      gltf.scene.position.set(0, 4, 0);
+      // gltf.scene.rotateY(Math.PI);
 
       this.boat = gltf.scene
       this.speed = {
@@ -66,9 +67,8 @@ async function loadModel(url) {
 
 
 let chestModel = null;
-async function createChest(){
-  if(!chestModel)
-  {
+async function createChest() {
+  if (!chestModel) {
     chestModel = await loadModel("textures/scene.gltf");
   }
   return new Chest(chestModel.clone());
@@ -90,7 +90,6 @@ async function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   document.body.appendChild(renderer.domElement);
-
 
   scene = new THREE.Scene();
 
@@ -172,12 +171,9 @@ async function init() {
   controls.maxDistance = 200.0;
   controls.update();
 
-  // GUI
   const waterUniforms = water.material.uniforms;
-  //
-
-  for(let i=0; i < CHEST_COUNT; i++)
-  {
+  
+  for (let i = 0; i < CHEST_COUNT; i++) {
     const chest = await createChest();
     chests.push(chest);
   }
@@ -186,10 +182,10 @@ async function init() {
 
   window.addEventListener('keydown', function (e) {
     if (e.key == "w") {
-      boat.speed.vel = -1;
+      boat.speed.vel = 1;
     }
     if (e.key == "s") {
-      boat.speed.vel = 1;
+      boat.speed.vel = -1;
     }
     if (e.key == "a") {
       boat.speed.rot = +0.03;
@@ -214,20 +210,23 @@ function onWindowResize() {
 
 }
 
+function updateCamera() {
+  camera.position.x = boat.boat.position.x - 10.0;
+  camera.position.z = boat.boat.position.z -40.0;
+  camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);
+}
+
 function collide(obj1, obj2) {
   return (
     Math.abs(obj1.position.x - obj2.position.x) < 10 && Math.abs(obj1.position.z - obj2.position.z) < 10
   )
 }
 
-function checkCollision(){
-  if(boat.boat)
-  { 
+function checkCollision() {
+  if (boat.boat) {
     chests.forEach(chest => {
-      if(chest.chest)
-      {
-        if(collide(boat.boat, chest.chest))
-        {
+      if (chest.chest) {
+        if (collide(boat.boat, chest.chest)) {
           scene.remove(chest.chest);
           chest.chest = null;
         }
@@ -240,6 +239,7 @@ function animate() {
 
   requestAnimationFrame(animate);
   render();
+  updateCamera();
   boat.update();
   checkCollision();
 }
