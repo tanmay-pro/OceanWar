@@ -12,6 +12,10 @@ let controls, water, sun;
 
 const loader = new GLTFLoader();
 
+function random(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
 class Boat {
   constructor() {
     loader.load("textures/ship.glb", (gltf) => {
@@ -42,30 +46,44 @@ class Boat {
 
 
 
-class Chest{
-  constructor() {
-    loader.load("textures/chest/gltf", (gltf) => {
-      scene.add(gltf.scene);
-      gltf.scene.scale.set(10, 20, 30);
-      gltf.scene.position.set(10, 4, 40);
+class Chest {
+  constructor(Scene) {
+    scene.add(Scene);
+    Scene.scale.set(3, 3, 3);
+    Scene.position.set(random(-200, 200), -0.4, random(-200, 200));
 
-      this.boat = gltf.scene
-      this.speed = {
-        vel: 0,
-        rot: 0
-      }
-    })
+    this.chest = Scene
   }
 }
 
+async function loadModel(url) {
+  return new Promise((resolve, reject) => {
+    loader.load(url, (gltf) => {
+      resolve(gltf.scene);
+    })
+  })
+}
+
+
+let chestModel = null;
+async function createChest(){
+  if(!chestModel)
+  {
+    chestModel = await loadModel("textures/scene.gltf");
+  }
+  return new Chest(chestModel.clone());
+}
+
 const boat = new Boat();
-const chest = new Chest();
+
+let chests = []
+const CHEST_COUNT = 10
 
 init();
 animate();
 
 
-function init() {
+async function init() {
 
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -157,6 +175,13 @@ function init() {
   // GUI
   const waterUniforms = water.material.uniforms;
   //
+
+  for(let i=0; i < CHEST_COUNT; i++)
+  {
+    const chest = await createChest();
+    chests.push(chest);
+  }
+
   window.addEventListener('resize', onWindowResize);
 
   window.addEventListener('keydown', function (e) {
@@ -167,10 +192,10 @@ function init() {
       boat.speed.vel = 1;
     }
     if (e.key == "a") {
-      boat.speed.rot = +0.01;
+      boat.speed.rot = +0.03;
     }
     if (e.key == "d") {
-      boat.speed.rot = -0.01;
+      boat.speed.rot = -0.03;
     }
   })
 
@@ -189,12 +214,34 @@ function onWindowResize() {
 
 }
 
+function collide(obj1, obj2) {
+  return (
+    Math.abs(obj1.position.x - obj2.position.x) < 10 && Math.abs(obj1.position.z - obj2.position.z) < 10
+  )
+}
+
+function checkCollision(){
+  if(boat.boat)
+  { 
+    chests.forEach(chest => {
+      if(chest.chest)
+      {
+        if(collide(boat.boat, chest.chest))
+        {
+          scene.remove(chest.chest);
+          chest.chest = null;
+        }
+      }
+    })
+  }
+}
+
 function animate() {
 
   requestAnimationFrame(animate);
   render();
   boat.update();
-
+  checkCollision();
 }
 
 function render() {
