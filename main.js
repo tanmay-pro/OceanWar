@@ -22,8 +22,6 @@ class Boat {
       scene.add(gltf.scene);
       gltf.scene.scale.set(15, 20, 15);
       gltf.scene.position.set(0, 4, 0);
-      // gltf.scene.rotateY(Math.PI);
-
       this.boat = gltf.scene
       this.speed = {
         vel: 0,
@@ -52,8 +50,7 @@ class Chest {
     scene.add(Scene);
     Scene.scale.set(3, 3, 3);
     Scene.position.set(random(-200, 200), -0.4, random(-200, 200));
-
-    this.chest = Scene
+    this.chest = Scene 
   }
 }
 
@@ -84,23 +81,15 @@ animate();
 
 
 async function init() {
-
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   document.body.appendChild(renderer.domElement);
-
   scene = new THREE.Scene();
-
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
   camera.position.set(0, 0, 100);
-
-  //
-
   sun = new THREE.Vector3();
-
-  // Water
 
   const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
 
@@ -110,9 +99,7 @@ async function init() {
       textureWidth: 512,
       textureHeight: 512,
       waterNormals: new THREE.TextureLoader().load('textures/waternormals.jpg', function (texture) {
-
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-
       }),
       sunDirection: new THREE.Vector3(),
       sunColor: 0xffffff,
@@ -147,23 +134,15 @@ async function init() {
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
 
   function updateSun() {
-
     const phi = THREE.MathUtils.degToRad(90 - parameters.elevation);
     const theta = THREE.MathUtils.degToRad(parameters.azimuth);
-
     sun.setFromSphericalCoords(1, phi, theta);
-
     sky.material.uniforms['sunPosition'].value.copy(sun);
     water.material.uniforms['sunDirection'].value.copy(sun).normalize();
-
     scene.environment = pmremGenerator.fromScene(sky).texture;
-
   }
 
   updateSun();
-
-  //
-
   controls = new OrbitControls(camera, renderer.domElement);
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 10, 0);
@@ -202,12 +181,9 @@ async function init() {
 }
 
 function onWindowResize() {
-
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-
   renderer.setSize(window.innerWidth, window.innerHeight);
-
 }
 
 function updateCamera() {
@@ -236,7 +212,6 @@ function checkCollision() {
 }
 
 function animate() {
-
   requestAnimationFrame(animate);
   render();
   updateCamera();
@@ -245,9 +220,6 @@ function animate() {
 }
 
 function render() {
-
   water.material.uniforms['time'].value += 1.0 / 60.0;
-
   renderer.render(scene, camera);
-
 }
