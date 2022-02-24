@@ -171,12 +171,9 @@ function onWindowResize() {
 }
 
 function updateCamera() {
-  if(boat.boat.position != null)
-  {
-    camera.position.x = boat.boat.position.x - 10;
-    camera.position.z = boat.boat.position.z - 40;
-    camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);  
-  } 
+  camera.position.x = boat.boat.position.x - 10;
+  camera.position.z = boat.boat.position.z - 40;
+  camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);
 }
 
 function collide(obj1, obj2) {
@@ -190,7 +187,6 @@ function checkCollision() {
     chests.forEach(chest => {
       if (chest.chest) {
         if (collide(boat.boat, chest.chest)) {
-          console.log("Collision");
           scene.remove(chest.chest);
           chest.chest = null;
         }
@@ -210,12 +206,15 @@ function animate() {
   counter++;
   requestAnimationFrame(animate);
   render();
-  updateCamera();
+  boat.update();
+  if(boat.boat)
+  {
+    updateCamera();
+  }
   if (counter % 100 == 0) {
     generateChests();
     counter = 0;
-  } 
-  boat.update();
+  }
   checkCollision();
 }
 
