@@ -9,6 +9,10 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 let camera, scene, renderer;
 let controls, water, sun;
+let chests = []
+let chestModel = null;
+const CHEST_COUNT = 1;
+let counter = 0;
 
 const loader = new GLTFLoader();
 
@@ -43,14 +47,12 @@ class Boat {
   }
 }
 
-
-
 class Chest {
   constructor(Scene) {
     scene.add(Scene);
     Scene.scale.set(3, 3, 3);
-    Scene.position.set(random(-200, 200), -0.4, random(-200, 200));
-    this.chest = Scene 
+    Scene.position.set(boat.boat.position.x + random(-100, 100), -0.4, boat.boat.position.z + random(-100, 100));
+    this.chest = Scene;
   }
 }
 
@@ -62,23 +64,12 @@ async function loadModel(url) {
   })
 }
 
-
-let chestModel = null;
-async function createChest() {
-  if (!chestModel) {
-    chestModel = await loadModel("textures/scene.gltf");
-  }
-  return new Chest(chestModel.clone());
-}
+chestModel = await loadModel("textures/scene.gltf");
 
 const boat = new Boat();
 
-let chests = []
-const CHEST_COUNT = 10
-
 init();
 animate();
-
 
 async function init() {
   renderer = new THREE.WebGLRenderer();
@@ -112,8 +103,6 @@ async function init() {
   water.rotation.x = - Math.PI / 2;
 
   scene.add(water);
-
-  // Skybox
 
   const sky = new Sky();
   sky.scale.setScalar(10000);
@@ -151,11 +140,6 @@ async function init() {
   controls.update();
 
   const waterUniforms = water.material.uniforms;
-  
-  for (let i = 0; i < CHEST_COUNT; i++) {
-    const chest = await createChest();
-    chests.push(chest);
-  }
 
   window.addEventListener('resize', onWindowResize);
 
@@ -187,9 +171,12 @@ function onWindowResize() {
 }
 
 function updateCamera() {
-  camera.position.x = boat.boat.position.x - 10.0;
-  camera.position.z = boat.boat.position.z -40.0;
-  camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);
+  if(boat.boat.position != null)
+  {
+    camera.position.x = boat.boat.position.x - 10;
+    camera.position.z = boat.boat.position.z - 40;
+    camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);  
+  } 
 }
 
 function collide(obj1, obj2) {
@@ -203,6 +190,7 @@ function checkCollision() {
     chests.forEach(chest => {
       if (chest.chest) {
         if (collide(boat.boat, chest.chest)) {
+          console.log("Collision");
           scene.remove(chest.chest);
           chest.chest = null;
         }
@@ -211,10 +199,22 @@ function checkCollision() {
   }
 }
 
+function generateChests() {
+  for (let i = 0; i < CHEST_COUNT; i++) {
+    const chest = new Chest(chestModel.clone());
+    chests.push(chest);
+  }
+}
+
 function animate() {
+  counter++;
   requestAnimationFrame(animate);
   render();
   updateCamera();
+  if (counter % 100 == 0) {
+    generateChests();
+    counter = 0;
+  } 
   boat.update();
   checkCollision();
 }
