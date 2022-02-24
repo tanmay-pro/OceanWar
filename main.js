@@ -192,9 +192,12 @@ function onWindowResize() {
 }
 
 function updateCamera() {
-  camera.position.x = boat.boat.position.x - 10;
-  camera.position.z = boat.boat.position.z - 40;
-  camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);
+  if(boat.boat)
+  {
+    camera.position.x = boat.boat.position.x - 10;
+    camera.position.z = boat.boat.position.z - 40;
+    camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);  
+  }
 }
 
 function collide(obj1, obj2) {
@@ -295,9 +298,7 @@ function animate() {
   requestAnimationFrame(animate);
   render();
   boat.update();
-  if (boat.boat) {
-    updateCamera();
-  }
+  updateCamera();
   if (counter % 100 == 0) {
     generateChests();
     generateEnemies();
