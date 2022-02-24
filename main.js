@@ -10,9 +10,18 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 let camera, scene, renderer;
 let controls, water, sun;
 let chests = []
+let enemies = []
 let chestModel = null;
+let enemyModel = null;
 const CHEST_COUNT = 1;
+const ENEMY_COUNT = 1;
+const MAX_CHESTS = 20;
+const MAX_ENEMIES = 20;
+let currChests = 0;
+let currEnemies = 0;
+let collectedChests = 0;
 let counter = 0;
+let currHealth = 100;
 
 const loader = new GLTFLoader();
 
@@ -42,8 +51,10 @@ class Boat {
   }
 
   stop() {
-    this.speed.vel = 0;
-    this.speed.rot = 0;
+    if (this.boat) {
+      this.speed.vel = 0;
+      this.speed.rot = 0;
+    }
   }
 }
 
@@ -51,8 +62,18 @@ class Chest {
   constructor(Scene) {
     scene.add(Scene);
     Scene.scale.set(3, 3, 3);
-    Scene.position.set(boat.boat.position.x + random(-100, 100), -0.4, boat.boat.position.z + random(-100, 100));
+    Scene.position.set(boat.boat.position.x + random(0, 100), -0.4, boat.boat.position.z + random(-100, 100));
     this.chest = Scene;
+  }
+}
+
+class Enemy {
+  constructor(EnemyScene) {
+    scene.add(EnemyScene);
+    EnemyScene.scale.set(2, 3, 2);
+    EnemyScene.rotation.y = Math.PI / 2;
+    EnemyScene.position.set(boat.boat.position.x + random(0, 100), -0.4, boat.boat.position.z + random(-100, 100));
+    this.enemy = EnemyScene;
   }
 }
 
@@ -65,7 +86,7 @@ async function loadModel(url) {
 }
 
 chestModel = await loadModel("textures/scene.gltf");
-
+enemyModel = await loadModel("textures/motorboat/scene.gltf");
 const boat = new Boat();
 
 init();
@@ -182,13 +203,30 @@ function collide(obj1, obj2) {
   )
 }
 
-function checkCollision() {
+function checkCollisionChest() {
   if (boat.boat) {
     chests.forEach(chest => {
       if (chest.chest) {
         if (collide(boat.boat, chest.chest)) {
           scene.remove(chest.chest);
           chest.chest = null;
+          currChests--;
+          collectedChests++;
+        }
+      }
+    })
+  }
+}
+
+function checkCollisionEnemy() {
+  if (boat.boat) {
+    enemies.forEach(enemy => {
+      if (enemy.enemy) {
+        if (collide(boat.boat, enemy.enemy)) {
+          scene.remove(enemy.enemy);
+          enemy.enemy = null;
+          currEnemies--;
+          currHealth = currHealth - 20;
         }
       }
     })
@@ -196,9 +234,59 @@ function checkCollision() {
 }
 
 function generateChests() {
-  for (let i = 0; i < CHEST_COUNT; i++) {
-    const chest = new Chest(chestModel.clone());
-    chests.push(chest);
+  if (currChests < MAX_CHESTS) {
+    for (let i = 0; i < CHEST_COUNT; i++) {
+      const chest = new Chest(chestModel.clone());
+      chests.push(chest);
+      currChests++;
+    }
+  }
+}
+
+function generateEnemies() {
+  if (currEnemies < MAX_ENEMIES) {
+    for (let i = 0; i < ENEMY_COUNT; i++) {
+      const enemy = new Enemy(enemyModel.clone());
+      enemies.push(enemy);
+      currEnemies++;
+    }
+  }
+}
+
+function moveEnemies() {
+  enemies.forEach(enemy => {
+    //console.log(enemy);
+    // var d = - boat.boat.position.x + enemy.enemy.position.x;
+    // if (enemy.enemy.position.x > boat.boat.position.x) {
+    //   enemy.enemy.position.x -= Math.min(0.1, d);
+    // }
+    // else if (enemy.enemy.position.x < boat.boat.position.x) {
+    //   enemy.enemy.position.x += Math.min(0.1, d);
+    // }
+    // if (enemy.enemy.position.x > boat.boat.position.x) {
+    //   enemy.enemy.position.x -= 0.1;
+    // }
+    // else if (enemy.enemy.position.x < boat.boat.position.x) {
+    //   enemy.enemy.position.x += 0.1;
+    // }
+    // var d2 = - boat.boat.position.z + enemy.enemy.position.z;
+    if(enemy.enemy)
+    {
+      if (enemy.enemy.position.z > boat.boat.position.z) {
+        enemy.enemy.position.z -= 0.1;
+      }
+      else if (enemy.enemy.position.z < boat.boat.position.z) {
+        enemy.enemy.position.z += 0.1;
+      }
+    }
+  })
+}
+
+function checkGameStates()
+{
+  if(currHealth <= 0)
+  {
+    // End the game
   }
 }
 
@@ -207,15 +295,18 @@ function animate() {
   requestAnimationFrame(animate);
   render();
   boat.update();
-  if(boat.boat)
-  {
+  if (boat.boat) {
     updateCamera();
   }
   if (counter % 100 == 0) {
     generateChests();
+    generateEnemies();
     counter = 0;
   }
-  checkCollision();
+  checkCollisionChest();
+  checkCollisionEnemy();
+  moveEnemies();
+  checkGameStates();
 }
 
 function render() {
