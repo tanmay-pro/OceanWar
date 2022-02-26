@@ -6,13 +6,17 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Water } from 'three/examples/jsm/objects/Water.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 
-let camera, scene, renderer;
+
+let camera, scene, renderer, birdCamera;
 let controls, water, sun;
+let changeCamera = 0;
 let chests = []
 let enemies = []
 let chestModel = null;
 let enemyModel = null;
+let fontModel = null;
 const CHEST_COUNT = 1;
 const ENEMY_COUNT = 1;
 const MAX_CHESTS = 15;
@@ -23,10 +27,12 @@ let collectedChests = 0;
 let counter = 0;
 let currHealth = 100;
 let destroyedEnemies = 0;
+let gameState = 0;
 var bullets = [];
 var clock = new THREE.Clock();
 
 const loader = new GLTFLoader();
+const fontLoader = new FontLoader();
 
 function random(min, max) {
   return Math.random() * (max - min) + min;
@@ -64,7 +70,8 @@ class Boat {
 class Chest {
   constructor(Scene) {
     scene.add(Scene);
-    Scene.scale.set(3, 3, 3);
+    Scene.scale.set(2, 2, 2);
+    Scene.rotation.y = Math.PI/2;
     Scene.position.set(boat.boat.position.x + random(0, 100), -0.4, boat.boat.position.z + random(-100, 100));
     this.chest = Scene;
   }
@@ -91,6 +98,7 @@ async function loadModel(url) {
 
 chestModel = await loadModel("textures/scene.gltf");
 enemyModel = await loadModel("textures/motorboat/scene.gltf");
+fontModel = fontLoader.load("fonts/helvetiker_regular.typeface.json");
 const boat = new Boat();
 
 init();
@@ -104,7 +112,9 @@ async function init() {
   document.body.appendChild(renderer.domElement);
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
+  birdCamera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000); 
   camera.position.set(0, 0, 100);
+  birdCamera.position.set(0, 100, 100);
   sun = new THREE.Vector3();
 
   const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
@@ -157,7 +167,14 @@ async function init() {
   }
 
   updateSun();
-  controls = new OrbitControls(camera, renderer.domElement);
+  if(changeCamera == 1)
+  {
+    controls = new OrbitControls(birdCamera, renderer.domElement);
+  }
+  else
+  {
+    controls = new OrbitControls(camera, renderer.domElement); 
+  }
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 10, 0);
   controls.minDistance = 40.0;
@@ -196,6 +213,10 @@ async function init() {
       scene.add(bullet);
       bullets.push(bullet);
     }
+    if(e.key == "c")
+    {
+      changeCamera = 1;
+    }
   })
 
   window.addEventListener('keyup', function (e) {
@@ -207,6 +228,8 @@ async function init() {
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  birdCamera.aspect = window.innerWidth / window.innerHeight;
+  birdCamera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
@@ -216,6 +239,9 @@ function updateCamera() {
     camera.position.x = boat.boat.position.x - 10;
     camera.position.z = boat.boat.position.z - 40;
     camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);  
+    birdCamera.position.x = boat.boat.position.x - 10;
+    birdCamera.position.z = boat.boat.position.z - 40;
+    birdCamera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);
   }
 }
 
@@ -246,6 +272,10 @@ function checkCollisionEnemy() {
       if (enemy.enemy) {
         if (collide(boat.boat, enemy.enemy)) {
           scene.remove(enemy.enemy);
+          for(var j = 0; j < enemy.enemy.bullets.length; j++)
+          {
+            scene.remove(enemy.enemy.bullets[j]);
+          }
           enemy.enemy = null;
           currEnemies--;
           currHealth = currHealth - 10;
@@ -302,14 +332,6 @@ function moveEnemies() {
       } 
     }
   })
-}
-
-function checkGameStates()
-{
-  if(currHealth <= 0)
-  {
-    // 
-  }
 }
 
 function updateBullets(){
@@ -415,7 +437,6 @@ function playerHit(){
         }
         if(collide(boat.boat, enemy.enemy.bullets[i]))
         {
-          console.log("Collision");
           scene.remove(enemy.enemy.bullets[i]);
           enemy.enemy.bullets.splice(i, 1);
           currHealth = currHealth - 5;
@@ -425,7 +446,24 @@ function playerHit(){
   })
 }
 
+function checkGameStates()
+{
+  if(currHealth <= 0)
+  {
+    // 
+  }
+}
+
+function updateHUD()
+{
+  if (gameState == 0)
+  {
+
+  }
+}
+
 function animate() {
+  checkGameStates();
   counter++;
   requestAnimationFrame(animate);
   render();
@@ -447,10 +485,17 @@ function animate() {
   updateBullets();
   destroyEnemy();
   playerHit();
-  checkGameStates();
+  updateHUD();
 }
 
 function render() {
   water.material.uniforms['time'].value += 1.0 / 60.0;
-  renderer.render(scene, camera);
+  if(changeCamera == 1)
+  {
+    renderer.render(scene, birdCamera);
+  }
+  else
+  {
+    renderer.render(scene, camera);
+  }
 }
