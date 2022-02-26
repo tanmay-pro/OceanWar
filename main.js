@@ -26,6 +26,7 @@ let currEnemies = 0;
 let collectedChests = 0;
 let counter = 0;
 let currHealth = 100;
+let endGame = 0;
 let destroyedEnemies = 0;
 let startGame = 0;
 let gameState = "menu";
@@ -71,7 +72,7 @@ class Chest {
   constructor(Scene) {
     scene.add(Scene);
     Scene.scale.set(2, 2, 2);
-    Scene.rotation.y = Math.PI/2;
+    Scene.rotation.y = Math.PI / 2;
     Scene.position.set(boat.boat.position.x + random(0, 100), -0.4, boat.boat.position.z + random(-100, 100));
     this.chest = Scene;
   }
@@ -111,13 +112,14 @@ async function init() {
   document.body.appendChild(renderer.domElement);
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
-  birdCamera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000); 
+  birdCamera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
   camera.position.set(0, 0, 100);
   birdCamera.position.set(0, 100, 100);
   sun = new THREE.Vector3();
+  myText = new SpriteText('');
 
   const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
-
+  startUp = new Date().getTime();
   water = new Water(
     waterGeometry,
     {
@@ -166,13 +168,11 @@ async function init() {
   }
 
   updateSun();
-  if(changeCamera == 1)
-  {
+  if (changeCamera == 1) {
     controls = new OrbitControls(birdCamera, renderer.domElement);
   }
-  else
-  {
-    controls = new OrbitControls(camera, renderer.domElement); 
+  else {
+    controls = new OrbitControls(camera, renderer.domElement);
   }
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.target.set(0, 10, 0);
@@ -197,31 +197,27 @@ async function init() {
     if (e.key == "d") {
       boat.speed.rot = -0.03;
     }
-    if(e.key == "Enter") 
-    {
-      var bullet = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 10), new THREE.MeshBasicMaterial({color: 0xD4AF37}));
-      bullet.position.set(boat.boat.position.x - 1, boat.boat.position.y - 1,boat.boat.position.z - 1);
+    if (e.key == "Enter") {
+      var bullet = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 10), new THREE.MeshBasicMaterial({ color: 0xD4AF37 }));
+      bullet.position.set(boat.boat.position.x - 1, boat.boat.position.y - 1, boat.boat.position.z - 1);
       bullet.alive = true;
-      
+
       bullet.velocity = new THREE.Vector3(+Math.sin(boat.boat.rotation.y), 0, Math.cos(boat.boat.rotation.y));
 
-      setTimeout(function(){
+      setTimeout(function () {
         bullet.alive = false;
         scene.remove(bullet);
       }, 2000);
       scene.add(bullet);
       bullets.push(bullet);
     }
-    if(e.key == "c" && changeCamera == 0)
-    {
+    if (e.key == "c" && changeCamera == 0) {
       changeCamera = 1;
     }
-    else if(e.key == "c" && changeCamera == 1)
-    {
+    else if (e.key == "c" && changeCamera == 1) {
       changeCamera = 0;
     }
-    if(e.key == " " && gameState == "menu")
-    {
+    if (e.key == " " && gameState == "menu") {
       gameState = "playing";
     }
   })
@@ -229,11 +225,6 @@ async function init() {
   window.addEventListener('keyup', function (e) {
     boat.stop()
   })
-
-  myText = new SpriteText("My Text")
-  myText.position.set(0, 10, 0);
-  scene.add(myText);
-  startUp = new Date().getTime();
 }
 
 function onWindowResize() {
@@ -245,11 +236,10 @@ function onWindowResize() {
 }
 
 function updateCamera() {
-  if(boat.boat)
-  {
+  if (boat.boat) {
     camera.position.x = boat.boat.position.x - 10;
     camera.position.z = boat.boat.position.z - 40;
-    camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);  
+    camera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);
     birdCamera.position.x = boat.boat.position.x - 10;
     birdCamera.position.z = boat.boat.position.z - 40;
     birdCamera.lookAt(boat.boat.position.x, boat.boat.position.y, boat.boat.position.z);
@@ -283,12 +273,12 @@ function checkCollisionEnemy() {
       if (enemy.enemy) {
         if (collide(boat.boat, enemy.enemy)) {
           scene.remove(enemy.enemy);
-          for(var j = 0; j < enemy.enemy.bullets.length; j++)
-          {
+          for (var j = 0; j < enemy.enemy.bullets.length; j++) {
             scene.remove(enemy.enemy.bullets[j]);
           }
           enemy.enemy = null;
           currEnemies--;
+          destroyedEnemies++;
           currHealth = currHealth - 10;
         }
       }
@@ -297,8 +287,7 @@ function checkCollisionEnemy() {
 }
 
 function generateChests() {
-  if(boat.boat)
-  {
+  if (boat.boat) {
     if (currChests < MAX_CHESTS) {
       for (let i = 0; i < CHEST_COUNT; i++) {
         const chest = new Chest(chestModel.clone());
@@ -310,8 +299,7 @@ function generateChests() {
 }
 
 function generateEnemies() {
-  if(boat.boat)
-  {
+  if (boat.boat) {
     if (currEnemies < MAX_ENEMIES) {
       for (let i = 0; i < ENEMY_COUNT; i++) {
         const enemy = new Enemy(enemyModel.clone());
@@ -324,27 +312,23 @@ function generateEnemies() {
 
 function moveEnemies() {
   enemies.forEach(enemy => {
-    if(enemy.enemy)
-    {
+    if (enemy.enemy) {
       if (enemy.enemy.position.z > boat.boat.position.z) {
         enemy.enemy.position.z -= 0.3;
       }
       else if (enemy.enemy.position.z < boat.boat.position.z) {
         enemy.enemy.position.z += 0.3;
-      } 
+      }
     }
   })
 }
 
-function updateBullets(){
-  for(var i =0; i < bullets.length; i++)
-  {
-    if(bullets[i] == undefined)
-    {
+function updateBullets() {
+  for (var i = 0; i < bullets.length; i++) {
+    if (bullets[i] == undefined) {
       continue;
     }
-    if(!bullets[i].alive)
-    {
+    if (!bullets[i].alive) {
       bullets.splice(i, 1);
       continue;
     }
@@ -352,21 +336,16 @@ function updateBullets(){
   }
 }
 
-function destroyEnemy(){
-  for(var i =0; i < bullets.length; i++)
-  {
-    if(bullets[i] == undefined)
-    {
+function destroyEnemy() {
+  for (var i = 0; i < bullets.length; i++) {
+    if (bullets[i] == undefined) {
       continue;
     }
     enemies.forEach(enemy => {
-      if(enemy.enemy && bullets[i] != undefined && bullets[i].alive) 
-      {
-        if(collide(bullets[i], enemy.enemy))
-        {
+      if (enemy.enemy && bullets[i] != undefined && bullets[i].alive) {
+        if (collide(bullets[i], enemy.enemy)) {
           scene.remove(enemy.enemy);
-          for(var j = 0; j < enemy.enemy.bullets.length; j++)
-          {
+          for (var j = 0; j < enemy.enemy.bullets.length; j++) {
             scene.remove(enemy.enemy.bullets[j]);
           }
           enemy.enemy = null;
@@ -381,22 +360,20 @@ function destroyEnemy(){
   }
 }
 
-function makeEnemiesShoot(){
+function makeEnemiesShoot() {
   enemies.forEach(enemy => {
-    if(enemy.enemy)
-    {
-      var bullet = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 10), new THREE.MeshBasicMaterial({color: 0xFF0000}));
-      bullet.position.set(enemy.enemy.position.x - 1, enemy.enemy.position.y + 2,enemy.enemy.position.z - 1);
+    if (enemy.enemy) {
+      var bullet = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 10), new THREE.MeshBasicMaterial({ color: 0xFF0000 }));
+      bullet.position.set(enemy.enemy.position.x - 1, enemy.enemy.position.y + 2, enemy.enemy.position.z - 1);
       bullet.alive = true;
-      var randVal1 = Math.random(0, 2* Math.PI);
+      var randVal1 = Math.random(0, 2 * Math.PI);
       bullet.velocity = new THREE.Vector3(Math.sin(randVal1), 0, Math.cos(randVal1));
       var rand2 = Math.random(0, 1);
-      if(rand2 < 0.5)
-      {
+      if (rand2 < 0.5) {
         bullet.velocity.multiplyScalar(-1);
       }
 
-      setTimeout(function(){
+      setTimeout(function () {
         scene.remove(bullet);
         bullet.alive = false;
       }, 2000);
@@ -406,18 +383,14 @@ function makeEnemiesShoot(){
   })
 }
 
-function updateEnemyBullets(){
+function updateEnemyBullets() {
   enemies.forEach(enemy => {
-    if(enemy.enemy)
-    {
-      for(var i = 0; i < enemy.enemy.bullets.length; i++)
-      {
-        if(enemy.enemy.bullets[i] == undefined)
-        {
+    if (enemy.enemy) {
+      for (var i = 0; i < enemy.enemy.bullets.length; i++) {
+        if (enemy.enemy.bullets[i] == undefined) {
           continue;
         }
-        if(!enemy.enemy.bullets[i].alive)
-        {
+        if (!enemy.enemy.bullets[i].alive) {
           enemy.enemy.bullets.splice(i, 1);
           continue;
         }
@@ -427,18 +400,14 @@ function updateEnemyBullets(){
   })
 }
 
-function playerHit(){
+function playerHit() {
   enemies.forEach(enemy => {
-    if(enemy.enemy)
-    {
-      for(var i = 0; i < enemy.enemy.bullets.length; i++)
-      {
-        if(enemy.enemy.bullets[i] == undefined)
-        {
+    if (enemy.enemy) {
+      for (var i = 0; i < enemy.enemy.bullets.length; i++) {
+        if (enemy.enemy.bullets[i] == undefined) {
           continue;
         }
-        if(collide(boat.boat, enemy.enemy.bullets[i]))
-        {
+        if (collide(boat.boat, enemy.enemy.bullets[i])) {
           scene.remove(enemy.enemy.bullets[i]);
           enemy.enemy.bullets.splice(i, 1);
           currHealth = currHealth - 5;
@@ -448,16 +417,52 @@ function playerHit(){
   })
 }
 
-function checkGameStates()
+function getScore()
 {
-  if(currHealth <= 0 && gameState == "playing")
-  {
+  return 10*collectedChests + 15*destroyedEnemies;
+}
+
+function checkGameStates() {
+  if (currHealth <= 0 && gameState == "playing") {
     gameState = "over";
   }
-  if(gameState == "menu")
-  {
-    if(new Date().getTime() - startUp > 3000)
+  if (gameState == "menu") {
+    myText.text = "Ocean War";
+    myText.position.set(0, 20, 0);
+    scene.add(myText);
+    if (new Date().getTime() - startUp > 3000)
+    {
       gameState = "playing";
+    }
+  }
+  if(gameState == "playing")
+  {
+    if(changeCamera == 0)
+    { 
+      myText.position.set(boat.boat.position.x + 22 , +22, boat.boat.position.z - 10);
+      myText.textHeight = 1;
+    }
+    else
+    {
+      myText.position.set(boat.boat.position.x + 28 , 67, boat.boat.position.z - 10);
+      myText.textHeight = 1.5;
+    }
+
+    let currTime = new Date().getTime() - startUp;
+    myText.text = "Health: " + currHealth + "\t\tTreasures: " + collectedChests + "\t\tScore: " + getScore() + "\t\tTime Elapsed: " + parseInt(currTime/1000) + "s";
+    myText.color = "#0ff0cb";
+  }
+  if (gameState == "over" && endGame == 0) {
+    let currTime = new Date().getTime() - startUp;
+    myText.text = "Game Over\n\nScore: " + getScore() + "\n\nTreasure Collected: " + collectedChests + "\n\nEnemies Destroyed: " + destroyedEnemies + "\n\nTime Elapsed: " + parseInt(currTime/1000) + "s";
+    myText.position.set(boat.boat.position.x, 15, boat.boat.position.z);
+    myText.textHeight = 2;
+    myText.color = "#00ff00";
+    endGame = 1;
+  }
+  else if(gameState == "over" && endGame == 1)
+  {
+    endGame = 2;
   }
 }
 
@@ -474,8 +479,7 @@ function animate() {
   }
   checkCollisionChest();
   checkCollisionEnemy();
-  if(counter % 50 == 0)
-  {
+  if (counter % 50 == 0) {
     makeEnemiesShoot();
   }
   moveEnemies();
@@ -488,12 +492,24 @@ function animate() {
 
 function render() {
   water.material.uniforms['time'].value += 1.0 / 60.0;
-  if(changeCamera == 1)
+  if(endGame == 0)
   {
-    renderer.render(scene, birdCamera);
+    if (changeCamera == 1) {
+      renderer.render(scene, birdCamera);
+    }
+    else {
+      renderer.render(scene, camera);
+    }
+  }
+  else if(endGame == 1)
+  {
+    checkGameStates();
+    endGame = 2;
+    renderer.render(scene, camera);
   }
   else
   {
-    renderer.render(scene, camera);
+    return;
   }
+
 }
