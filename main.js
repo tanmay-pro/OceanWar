@@ -76,6 +76,7 @@ class Enemy {
     EnemyScene.scale.set(2, 3, 2);
     EnemyScene.rotation.y = Math.PI / 2;
     EnemyScene.position.set(boat.boat.position.x + random(0, 100), -0.4, boat.boat.position.z + random(-100, 100));
+    EnemyScene.bullets = [];
     this.enemy = EnemyScene;
   }
 }
@@ -247,7 +248,7 @@ function checkCollisionEnemy() {
           scene.remove(enemy.enemy);
           enemy.enemy = null;
           currEnemies--;
-          currHealth = currHealth - 20;
+          currHealth = currHealth - 10;
         }
       }
     })
@@ -294,10 +295,10 @@ function moveEnemies() {
     if(enemy.enemy)
     {
       if (enemy.enemy.position.z > boat.boat.position.z) {
-        enemy.enemy.position.z -= 0.1;
+        enemy.enemy.position.z -= 0.3;
       }
       else if (enemy.enemy.position.z < boat.boat.position.z) {
-        enemy.enemy.position.z += 0.1;
+        enemy.enemy.position.z += 0.3;
       } 
     }
   })
@@ -340,6 +341,10 @@ function destroyEnemy(){
         if(collide(bullets[i], enemy.enemy))
         {
           scene.remove(enemy.enemy);
+          for(var j = 0; j < enemy.enemy.bullets.length; j++)
+          {
+            scene.remove(enemy.enemy.bullets[j]);
+          }
           enemy.enemy = null;
           bullets[i].alive = false;
           scene.remove(bullets[i]);
@@ -352,6 +357,73 @@ function destroyEnemy(){
   }
 }
 
+function makeEnemiesShoot(){
+  enemies.forEach(enemy => {
+    if(enemy.enemy)
+    {
+      var bullet = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 10), new THREE.MeshBasicMaterial({color: 0xFF0000}));
+      bullet.position.set(enemy.enemy.position.x - 1, enemy.enemy.position.y + 2,enemy.enemy.position.z - 1);
+      bullet.alive = true;
+      var randVal1 = Math.random(0, 2* Math.PI);
+      bullet.velocity = new THREE.Vector3(Math.sin(randVal1), 0, Math.cos(randVal1));
+      var rand2 = Math.random(0, 1);
+      if(rand2 < 0.5)
+      {
+        bullet.velocity.multiplyScalar(-1);
+      }
+
+      setTimeout(function(){
+        scene.remove(bullet);
+        bullet.alive = false;
+      }, 2000);
+      scene.add(bullet);
+      enemy.enemy.bullets.push(bullet);
+    }
+  })
+}
+
+function updateEnemyBullets(){
+  enemies.forEach(enemy => {
+    if(enemy.enemy)
+    {
+      for(var i = 0; i < enemy.enemy.bullets.length; i++)
+      {
+        if(enemy.enemy.bullets[i] == undefined)
+        {
+          continue;
+        }
+        if(!enemy.enemy.bullets[i].alive)
+        {
+          enemy.enemy.bullets.splice(i, 1);
+          continue;
+        }
+        enemy.enemy.bullets[i].position.add(enemy.enemy.bullets[i].velocity);
+      }
+    }
+  })
+}
+
+function playerHit(){
+  enemies.forEach(enemy => {
+    if(enemy.enemy)
+    {
+      for(var i = 0; i < enemy.enemy.bullets.length; i++)
+      {
+        if(enemy.enemy.bullets[i] == undefined)
+        {
+          continue;
+        }
+        if(collide(boat.boat, enemy.enemy.bullets[i]))
+        {
+          console.log("Collision");
+          scene.remove(enemy.enemy.bullets[i]);
+          enemy.enemy.bullets.splice(i, 1);
+          currHealth = currHealth - 5;
+        }
+      }
+    }
+  })
+}
 
 function animate() {
   counter++;
@@ -366,9 +438,15 @@ function animate() {
   }
   checkCollisionChest();
   checkCollisionEnemy();
+  if(counter % 50 == 0)
+  {
+    makeEnemiesShoot();
+  }
   moveEnemies();
+  updateEnemyBullets();
   updateBullets();
   destroyEnemy();
+  playerHit();
   checkGameStates();
 }
 
