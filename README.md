@@ -14,6 +14,7 @@ This is a 3D shooting game made in WebGL with use of three.js library.
 
 ## How to Run
 
+* `cd OceanWar` - Navigate to the directory where the game is located.
 * `npm install` - To Install the dependencies.
 * `npm run dev` - To run the game. 
 
