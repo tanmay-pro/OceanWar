@@ -6,11 +6,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Water } from 'three/examples/jsm/objects/Water.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import SpriteText from 'three-spritetext';
 
 
 let camera, scene, renderer, birdCamera;
-let controls, water, sun;
+let controls, water, sun, startUp, myText;
 let changeCamera = 0;
 let chests = []
 let enemies = []
@@ -27,12 +27,12 @@ let collectedChests = 0;
 let counter = 0;
 let currHealth = 100;
 let destroyedEnemies = 0;
+let startGame = 0;
 let gameState = "menu";
 var bullets = [];
 var clock = new THREE.Clock();
 
 const loader = new GLTFLoader();
-const fontLoader = new FontLoader();
 
 function random(min, max) {
   return Math.random() * (max - min) + min;
@@ -98,7 +98,6 @@ async function loadModel(url) {
 
 chestModel = await loadModel("textures/scene.gltf");
 enemyModel = await loadModel("textures/motorboat/scene.gltf");
-fontModel = fontLoader.load("fonts/helvetiker_regular.typeface.json");
 const boat = new Boat();
 
 init();
@@ -221,12 +220,20 @@ async function init() {
     {
       changeCamera = 0;
     }
+    if(e.key == " " && gameState == "menu")
+    {
+      gameState = "playing";
+    }
   })
 
   window.addEventListener('keyup', function (e) {
     boat.stop()
   })
 
+  myText = new SpriteText("My Text")
+  myText.position.set(0, 10, 0);
+  scene.add(myText);
+  startUp = new Date().getTime();
 }
 
 function onWindowResize() {
@@ -317,21 +324,6 @@ function generateEnemies() {
 
 function moveEnemies() {
   enemies.forEach(enemy => {
-    //console.log(enemy);
-    // var d = - boat.boat.position.x + enemy.enemy.position.x;
-    // if (enemy.enemy.position.x > boat.boat.position.x) {
-    //   enemy.enemy.position.x -= Math.min(0.1, d);
-    // }
-    // else if (enemy.enemy.position.x < boat.boat.position.x) {
-    //   enemy.enemy.position.x += Math.min(0.1, d);
-    // }
-    // if (enemy.enemy.position.x > boat.boat.position.x) {
-    //   enemy.enemy.position.x -= 0.1;
-    // }
-    // else if (enemy.enemy.position.x < boat.boat.position.x) {
-    //   enemy.enemy.position.x += 0.1;
-    // }
-    // var d2 = - boat.boat.position.z + enemy.enemy.position.z;
     if(enemy.enemy)
     {
       if (enemy.enemy.position.z > boat.boat.position.z) {
@@ -461,6 +453,11 @@ function checkGameStates()
   if(currHealth <= 0 && gameState == "playing")
   {
     gameState = "over";
+  }
+  if(gameState == "menu")
+  {
+    if(new Date().getTime() - startUp > 3000)
+      gameState = "playing";
   }
 }
 

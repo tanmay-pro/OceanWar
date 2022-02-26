@@ -11,6 +11,7 @@
     "vite": "^2.8.0"
   },
   "dependencies": {
-    "three": "^0.137.5"
+    "three": "^0.137.5",
+    "three-spritetext": "^1.6.5"
   }
 }
