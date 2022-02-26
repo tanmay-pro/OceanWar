@@ -27,7 +27,7 @@ let collectedChests = 0;
 let counter = 0;
 let currHealth = 100;
 let destroyedEnemies = 0;
-let gameState = 0;
+let gameState = "menu";
 var bullets = [];
 var clock = new THREE.Clock();
 
@@ -213,9 +213,13 @@ async function init() {
       scene.add(bullet);
       bullets.push(bullet);
     }
-    if(e.key == "c")
+    if(e.key == "c" && changeCamera == 0)
     {
       changeCamera = 1;
+    }
+    else if(e.key == "c" && changeCamera == 1)
+    {
+      changeCamera = 0;
     }
   })
 
@@ -286,21 +290,27 @@ function checkCollisionEnemy() {
 }
 
 function generateChests() {
-  if (currChests < MAX_CHESTS) {
-    for (let i = 0; i < CHEST_COUNT; i++) {
-      const chest = new Chest(chestModel.clone());
-      chests.push(chest);
-      currChests++;
+  if(boat.boat)
+  {
+    if (currChests < MAX_CHESTS) {
+      for (let i = 0; i < CHEST_COUNT; i++) {
+        const chest = new Chest(chestModel.clone());
+        chests.push(chest);
+        currChests++;
+      }
     }
   }
 }
 
 function generateEnemies() {
-  if (currEnemies < MAX_ENEMIES) {
-    for (let i = 0; i < ENEMY_COUNT; i++) {
-      const enemy = new Enemy(enemyModel.clone());
-      enemies.push(enemy);
-      currEnemies++;
+  if(boat.boat)
+  {
+    if (currEnemies < MAX_ENEMIES) {
+      for (let i = 0; i < ENEMY_COUNT; i++) {
+        const enemy = new Enemy(enemyModel.clone());
+        enemies.push(enemy);
+        currEnemies++;
+      }
     }
   }
 }
@@ -448,22 +458,13 @@ function playerHit(){
 
 function checkGameStates()
 {
-  if(currHealth <= 0)
+  if(currHealth <= 0 && gameState == "playing")
   {
-    // 
-  }
-}
-
-function updateHUD()
-{
-  if (gameState == 0)
-  {
-
+    gameState = "over";
   }
 }
 
 function animate() {
-  checkGameStates();
   counter++;
   requestAnimationFrame(animate);
   render();
@@ -485,7 +486,7 @@ function animate() {
   updateBullets();
   destroyEnemy();
   playerHit();
-  updateHUD();
+  checkGameStates();
 }
 
 function render() {
