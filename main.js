@@ -15,13 +15,16 @@ let chestModel = null;
 let enemyModel = null;
 const CHEST_COUNT = 1;
 const ENEMY_COUNT = 1;
-const MAX_CHESTS = 20;
-const MAX_ENEMIES = 20;
+const MAX_CHESTS = 15;
+const MAX_ENEMIES = 10;
 let currChests = 0;
 let currEnemies = 0;
 let collectedChests = 0;
 let counter = 0;
 let currHealth = 100;
+let destroyedEnemies = 0;
+var bullets = [];
+var clock = new THREE.Clock();
 
 const loader = new GLTFLoader();
 
@@ -177,6 +180,21 @@ async function init() {
     if (e.key == "d") {
       boat.speed.rot = -0.03;
     }
+    if(e.key == "Enter") 
+    {
+      var bullet = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 10), new THREE.MeshBasicMaterial({color: 0xD4AF37}));
+      bullet.position.set(boat.boat.position.x - 1, boat.boat.position.y - 1,boat.boat.position.z - 1);
+      bullet.alive = true;
+      
+      bullet.velocity = new THREE.Vector3(+Math.sin(boat.boat.rotation.y), 0, Math.cos(boat.boat.rotation.y));
+
+      setTimeout(function(){
+        bullet.alive = false;
+        scene.remove(bullet);
+      }, 2000);
+      scene.add(bullet);
+      bullets.push(bullet);
+    }
   })
 
   window.addEventListener('keyup', function (e) {
@@ -202,7 +220,7 @@ function updateCamera() {
 
 function collide(obj1, obj2) {
   return (
-    Math.abs(obj1.position.x - obj2.position.x) < 10 && Math.abs(obj1.position.z - obj2.position.z) < 10
+    Math.abs(obj1.position.x - obj2.position.x) < 7 && Math.abs(obj1.position.z - obj2.position.z) < 7
   )
 }
 
@@ -280,7 +298,7 @@ function moveEnemies() {
       }
       else if (enemy.enemy.position.z < boat.boat.position.z) {
         enemy.enemy.position.z += 0.1;
-      }
+      } 
     }
   })
 }
@@ -289,9 +307,51 @@ function checkGameStates()
 {
   if(currHealth <= 0)
   {
-    // End the game
+    // 
   }
 }
+
+function updateBullets(){
+  for(var i =0; i < bullets.length; i++)
+  {
+    if(bullets[i] == undefined)
+    {
+      continue;
+    }
+    if(!bullets[i].alive)
+    {
+      bullets.splice(i, 1);
+      continue;
+    }
+    bullets[i].position.add(bullets[i].velocity);
+  }
+}
+
+function destroyEnemy(){
+  for(var i =0; i < bullets.length; i++)
+  {
+    if(bullets[i] == undefined)
+    {
+      continue;
+    }
+    enemies.forEach(enemy => {
+      if(enemy.enemy && bullets[i] != undefined && bullets[i].alive) 
+      {
+        if(collide(bullets[i], enemy.enemy))
+        {
+          scene.remove(enemy.enemy);
+          enemy.enemy = null;
+          bullets[i].alive = false;
+          scene.remove(bullets[i]);
+          bullets.splice(i, 1);
+          currEnemies--;
+          destroyedEnemies++;
+        }
+      }
+    })
+  }
+}
+
 
 function animate() {
   counter++;
@@ -307,6 +367,8 @@ function animate() {
   checkCollisionChest();
   checkCollisionEnemy();
   moveEnemies();
+  updateBullets();
+  destroyEnemy();
   checkGameStates();
 }
 
